@@ -11,20 +11,44 @@ const btn = document.querySelector('#play-btn') as HTMLButtonElement
 btn.innerText = 'loading...'
 btn.style.pointerEvents = 'none'
 
+let playing = false
+
 btn.addEventListener('click', e => {
-    playBuffer(songBuffer)
+
+    if (playing) {
+        playing = false
+        audioCtx.suspend()
+        btn.innerText = 'play'
+    } else if (audioCtx.state == 'suspended') {
+        playing = true
+        audioCtx.resume()
+        btn.innerText = 'pause'
+    } else {
+        playBuffer(songBuffer)
+    }
 })
 
 let curSource: AudioBufferSourceNode
 
 function playBuffer(buf: AudioBuffer) {
-    curSource?.stop()
+    btn.innerText = 'pause'
+
+    if (curSource) {
+        curSource.onended = null
+        curSource.stop()
+    }
+
+    playing = true
 
     curSource = audioCtx.createBufferSource();
     curSource.connect(analyser);
     curSource.connect(audioCtx.destination);
     curSource.buffer = buf;
     curSource.start();
+    curSource.onended = () => {
+        btn.innerText = 'play'
+        playing = false
+    }
 }
 
 window.fetch('/sobernow.mp3')
@@ -45,19 +69,15 @@ const canvas = document.querySelector('canvas') as HTMLCanvasElement
 function handleDrop(e) {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
-    console.log(file)
 
     if (file) {
         const reader = new FileReader();
 
         reader.onload = function (event) {
 
-            console.log(event)
             audioCtx.decodeAudioData(event.target.result)
                 .then(audioBuffer => {
                     songBuffer = audioBuffer;
-                    btn.style.pointerEvents = '';
-                    btn.innerText = 'play';
                     canvas.classList.remove('drag-over');
 
                     playBuffer(songBuffer)
@@ -89,6 +109,7 @@ canvas.addEventListener('drop', handleDrop);
 
 
 
+const waveformKind = document.getElementById('waveform-kind') as HTMLSelectElement
 
 
 
@@ -166,6 +187,11 @@ let nextImageData
 function draw(tt) {
     time = tt / 1000
 
+    if (!playing) {
+        requestAnimationFrame(draw)
+        return
+    }
+
     if (nextImageData) {
         ctx.putImageData(nextImageData, -speed, 0)
     }
@@ -219,41 +245,62 @@ function draw(tt) {
     const sliceWidth = size / bufferLength;
     let x = 0;
 
-    let startX, startY
-    for (let i = 0; i < bufferLength; i++) {
-        const v = dataArray[i] / 255;
+    if (waveformKind.value == 'circular') {
+        let startX, startY
+        for (let i = 0; i < bufferLength; i++) {
+            const v = dataArray[i] / 255;
 
-        let h = .4
-        let y = v * size * h + (size / 2 * (1 - h))
+            let h = .4
+            let y = v * size * h + (size / 2 * (1 - h))
 
-        const a = (x / size) * Math.PI * 2
+            const a = (x / size) * Math.PI * 2
 
-        const polarX = size / 2 + Math.sin(a) * size / 2 * v
-        const polarY = size / 2 + Math.cos(a) * size / 2 * v
-        if (x == 0) {
-            startX = polarX
-            startY = polarY
+            const polarX = size / 2 + Math.sin(a) * size / 2 * v
+            const polarY = size / 2 + Math.cos(a) * size / 2 * v
+            if (x == 0) {
+                startX = polarX
+                startY = polarY
+            }
+
+
+            if (i === 0) {
+                ctx.moveTo(polarX, polarY);
+            } else {
+                ctx.lineTo(polarX, polarY);
+            }
+
+            // if (i === 0) {
+            //     ctx.moveTo(x, y);
+            // } else {
+            //     ctx.lineTo(x, y);
+            // }
+
+            x += sliceWidth;
         }
+        // note: only use this for cartesian coordinates
+        // ctx.lineTo(size, size / 2);
+        // ctx.lineTo(startX, startY);
+        ctx.stroke();
+    } else if (waveformKind.value == 'horizontal') {
+        for (let i = 0; i < bufferLength; i++) {
+            const v = dataArray[i] / 255;
 
+            let h = .4
+            let y = v * size * h + (size / 2 * (1 - h))
 
-        if (i === 0) {
-            ctx.moveTo(polarX, polarY);
-        } else {
-            ctx.lineTo(polarX, polarY);
+            const a = (x / size) * Math.PI * 2
+
+            if (i === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+
+            x += sliceWidth;
         }
-
-        // if (i === 0) {
-        //     ctx.moveTo(x, y);
-        // } else {
-        //     ctx.lineTo(x, y);
-        // }
-
-        x += sliceWidth;
+        ctx.lineTo(size, size / 2);
+        ctx.stroke();
     }
-    // note: only use this for cartesian coordinates
-    // ctx.lineTo(size, size / 2);
-    // ctx.lineTo(startX, startY);
-    ctx.stroke();
 
     requestAnimationFrame(draw)
 }

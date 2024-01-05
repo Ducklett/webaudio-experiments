@@ -11,6 +11,15 @@
     <div class="layout">
         <div class="settings">
             <button id="play-btn">Play</button>
+            <div class="field">
+                <label for="waveform-kind">Waveform</label>
+                <select name="waveform-kind" id="waveform-kind">
+                    <option value="none">-</option>
+                    <option value="horizontal">Horizontal</option>
+                    <option value="circular">Circular</option>
+                </select>
+
+            </div>
         </div>
         <div class="view">
             <canvas></canvas>
@@ -35,6 +44,7 @@
             width: min(30%, 300px);
             padding: 1em;
             background: #222222;
+            color: rgb(221, 221, 221);
             border-left: 1px solid black;
             box-shadow: 0px 0px 4px rgba(0, 0, 0, .8), 0px 0px 8px rgba(0, 0, 0, .4), 0px 0px 16px rgba(0, 0, 0, .2), 0px 0px 32px rgba(0, 0, 0, .1);
         }
