@@ -7,7 +7,7 @@ analyser.fftSize = 2048;
 const bufferLength = analyser.frequencyBinCount;
 const dataArray = new Uint8Array(bufferLength);
 
-const btn = document.createElement('button')
+const btn = document.querySelector('#play-btn') as HTMLButtonElement
 btn.innerText = 'loading...'
 btn.style.pointerEvents = 'none'
 
@@ -18,7 +18,6 @@ btn.addEventListener('click', e => {
     source.buffer = songBuffer;
     source.start();
 })
-document.body.append(btn)
 
 window.fetch('/sobernow.mp3')
     .then(response => response.arrayBuffer())
@@ -33,13 +32,12 @@ window.fetch('/sobernow.mp3')
     })
 
 
-const canvas = document.createElement('canvas')
-const size = 1024
+const canvas = document.querySelector('canvas') as HTMLCanvasElement
+const size = 512
 
 canvas.width = size
 canvas.height = size
 
-document.body.append(canvas)
 
 const ctx = canvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D
 

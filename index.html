@@ -8,11 +8,44 @@
 </head>
 
 <body>
+    <div class="layout">
+        <div class="settings">
+            <button id="play-btn">Play</button>
+        </div>
+        <div class="view">
+            <canvas></canvas>
+        </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
     <style>
         body {
+            margin: unset;
+        }
+
+        .layout {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+            background: #121212;
+        }
+
+        .settings {
+            width: min(30%, 300px);
+            padding: 1em;
+            background: #222222;
+            border-left: 1px solid black;
+            box-shadow: 0px 0px 4px rgba(0, 0, 0, .8), 0px 0px 8px rgba(0, 0, 0, .4), 0px 0px 16px rgba(0, 0, 0, .2), 0px 0px 32px rgba(0, 0, 0, .1);
+        }
+
+        .view {
             display: grid;
-            place-content: center;
+            place-items: center;
+            flex: 1;
+        }
+
+        .view canvas {
+            border-radius: .5em;
+            box-shadow: 0px 0px 4px rgba(0, 0, 0, .8), 0px 0px 8px rgba(0, 0, 0, .4), 0px 0px 16px rgba(0, 0, 0, .2), 0px 0px 32px rgba(0, 0, 0, .1);
         }
     </style>
 </body>
