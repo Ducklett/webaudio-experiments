@@ -1,4 +1,4 @@
-let songBuffer;
+let songBuffer: AudioBuffer;
 
 
 const audioCtx = new AudioContext();
@@ -12,12 +12,20 @@ btn.innerText = 'loading...'
 btn.style.pointerEvents = 'none'
 
 btn.addEventListener('click', e => {
-    const source = audioCtx.createBufferSource();
-    source.connect(analyser);
-    source.connect(audioCtx.destination);
-    source.buffer = songBuffer;
-    source.start();
+    playBuffer(songBuffer)
 })
+
+let curSource: AudioBufferSourceNode
+
+function playBuffer(buf: AudioBuffer) {
+    curSource?.stop()
+
+    curSource = audioCtx.createBufferSource();
+    curSource.connect(analyser);
+    curSource.connect(audioCtx.destination);
+    curSource.buffer = buf;
+    curSource.start();
+}
 
 window.fetch('/sobernow.mp3')
     .then(response => response.arrayBuffer())
@@ -33,6 +41,57 @@ window.fetch('/sobernow.mp3')
 
 
 const canvas = document.querySelector('canvas') as HTMLCanvasElement
+
+function handleDrop(e) {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    console.log(file)
+
+    if (file) {
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+
+            console.log(event)
+            audioCtx.decodeAudioData(event.target.result)
+                .then(audioBuffer => {
+                    songBuffer = audioBuffer;
+                    btn.style.pointerEvents = '';
+                    btn.innerText = 'play';
+                    canvas.classList.remove('drag-over');
+
+                    playBuffer(songBuffer)
+                })
+                .catch(error => {
+                    console.error(error);
+                    btn.innerText = error;
+                });
+        };
+
+        reader.readAsArrayBuffer(file);
+    }
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    canvas.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    canvas.classList.remove('drag-over');
+}
+
+
+canvas.addEventListener('dragover', handleDragOver);
+canvas.addEventListener('dragleave', handleDragLeave);
+canvas.addEventListener('drop', handleDrop);
+
+
+
+
+
+
 const size = 512
 
 canvas.width = size
