@@ -1,27 +1,57 @@
 let songBuffer: AudioBuffer;
 
 
-const audioCtx = new AudioContext();
-const analyser = audioCtx.createAnalyser();
-analyser.fftSize = 2048;
-const bufferLength = analyser.frequencyBinCount;
-const dataArray = new Uint8Array(bufferLength);
+let audioCtx: AudioContext
+let analyser: AnalyserNode
+let bufferLength: number
+let dataArray: Uint8Array
+
+let audioInitialized = false
+function initAudioContect() {
+    if (audioInitialized) return
+    audioInitialized = true
+
+    audioCtx = new AudioContext()
+    analyser = audioCtx.createAnalyser()
+    analyser.fftSize = 2048;
+    bufferLength = analyser.frequencyBinCount;
+    dataArray = new Uint8Array(bufferLength);
+}
 
 const btn = document.querySelector('#play-btn') as HTMLButtonElement
-btn.innerText = 'loading...'
-btn.style.pointerEvents = 'none'
 
 let playing = false
 
-btn.addEventListener('click', e => {
+btn.addEventListener('click', async e => {
+
+
+
+    initAudioContect()
+
+    if (!songBuffer) {
+        btn.innerText = 'loading...'
+        btn.style.pointerEvents = 'none'
+
+        await window.fetch('/sobernow.mp3')
+            .then(response => response.arrayBuffer())
+            .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
+            .then(audioBuffer => {
+                songBuffer = audioBuffer;
+                btn.style.pointerEvents = ''
+                btn.innerText = 'play'
+            }).catch(e => {
+                console.error(e)
+                btn.innerText = e
+            })
+    }
 
     if (playing) {
         playing = false
-        audioCtx.suspend()
+        audioCtx?.suspend()
         btn.innerText = 'play'
     } else if (audioCtx.state == 'suspended') {
         playing = true
-        audioCtx.resume()
+        audioCtx?.resume()
         btn.innerText = 'pause'
     } else {
         playBuffer(songBuffer)
@@ -51,18 +81,6 @@ function playBuffer(buf: AudioBuffer) {
     }
 }
 
-window.fetch('/sobernow.mp3')
-    .then(response => response.arrayBuffer())
-    .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
-    .then(audioBuffer => {
-        songBuffer = audioBuffer;
-        btn.style.pointerEvents = ''
-        btn.innerText = 'play'
-    }).catch(e => {
-        console.error(e)
-        btn.innerText = e
-    })
-
 
 const canvas = document.querySelector('canvas') as HTMLCanvasElement
 
@@ -70,12 +88,14 @@ function handleDrop(e) {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
 
+    initAudioContect()
+
     if (file) {
         const reader = new FileReader();
 
         reader.onload = function (event) {
 
-            audioCtx.decodeAudioData(event.target.result)
+            audioCtx.decodeAudioData(event.target?.result as any)
                 .then(audioBuffer => {
                     songBuffer = audioBuffer;
                     canvas.classList.remove('drag-over');
