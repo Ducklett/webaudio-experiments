@@ -130,6 +130,7 @@ canvas.addEventListener('drop', handleDrop);
 
 
 const waveformKind = document.getElementById('waveform-kind') as HTMLSelectElement
+const spectrogramKind = document.getElementById('spectrogram-kind') as HTMLSelectElement
 
 
 
@@ -216,39 +217,46 @@ function draw(tt) {
         ctx.putImageData(nextImageData, -speed, 0)
     }
 
+    if (spectrogramKind.value == 'horizontal') {
 
-    // analyser.getByteTimeDomainData(dataArray);
-    analyser.getByteFrequencyData(dataArray);
 
-    // ctx.fillStyle = "rgb(255,0,255)";
-    // ctx.fillRect(0, 0, size, size);
+        // analyser.getByteTimeDomainData(dataArray);
+        analyser.getByteFrequencyData(dataArray);
 
-    for (let i = 0; i < lineData.length / 4; i++) {
-        const t = i / (lineData.length / 4)
-        const idx = Math.floor((1 - t) * dataArray.length)
-        const sample = dataArray[idx]
+        // ctx.fillStyle = "rgb(255,0,255)";
+        // ctx.fillRect(0, 0, size, size);
 
-        const normalizedSample = sample / 255
+        for (let i = 0; i < lineData.length / 4; i++) {
+            const t = i / (lineData.length / 4)
+            const idx = Math.floor((1 - t) * dataArray.length)
+            const sample = dataArray[idx]
 
-        const [r, g, b] = getSpectrogramColor(normalizedSample)
+            const normalizedSample = sample / 255
 
-        // r
-        lineData[0 + i * 4] = r
-        // g
-        lineData[1 + i * 4] = g
-        // b
-        lineData[2 + i * 4] = b
-        // a
-        lineData[3 + i * 4] = 255
+            const [r, g, b] = getSpectrogramColor(normalizedSample)
+
+            // r
+            lineData[0 + i * 4] = r
+            // g
+            lineData[1 + i * 4] = g
+            // b
+            lineData[2 + i * 4] = b
+            // a
+            lineData[3 + i * 4] = 255
+        }
+        const imgData: ImageData = new ImageData(lineData, 1, size)
+
+        for (let i = 0; i < speed; i++) {
+            ctx.putImageData(imgData, size - i - 1, 0, 0, 0, 1, size)
+        }
+
+
+        nextImageData = ctx.getImageData(0, 0, size, size)
+    } else {
+        ctx.fillRect(0, 0, size, size)
     }
-    const imgData: ImageData = new ImageData(lineData, 1, size)
-
-    for (let i = 0; i < speed; i++) {
-        ctx.putImageData(imgData, size - i - 1, 0, 0, 0, 1, size)
-    }
 
 
-    nextImageData = ctx.getImageData(0, 0, size, size)
 
     // ctx.putImageData(imgData, 0, 0, 0, 0, 1, size,)
 
