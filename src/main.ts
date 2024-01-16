@@ -5,9 +5,10 @@ let audioCtx: AudioContext
 let analyser: AnalyserNode
 let bufferLength: number
 let dataArray: Uint8Array
+let micStream: MediaStream
 
 let audioInitialized = false
-function initAudioContect() {
+async function initAudioContect() {
     if (audioInitialized) return
     audioInitialized = true
 
@@ -16,6 +17,23 @@ function initAudioContect() {
     analyser.fftSize = 2048;
     bufferLength = analyser.frequencyBinCount;
     dataArray = new Uint8Array(bufferLength);
+
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        // Access the user's microphone
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(function (stream) {
+                micStream = stream
+
+            })
+            .catch(function (error) {
+                // Handle any errors that occur during microphone access
+                console.error('Error accessing microphone:', error);
+            });
+    } else {
+        console.error('Web Audio API is not supported in this browser.');
+    }
+
+
 }
 
 const btn = document.querySelector('#play-btn') as HTMLButtonElement
@@ -24,14 +42,11 @@ let playing = false
 
 btn.addEventListener('click', async e => {
 
-
-
-    initAudioContect()
+    btn.innerText = 'loading...'
+    btn.style.pointerEvents = 'none'
+    await initAudioContect()
 
     if (!songBuffer) {
-        btn.innerText = 'loading...'
-        btn.style.pointerEvents = 'none'
-
         await window.fetch('/sobernow.mp3')
             .then(response => response.arrayBuffer())
             .then(arrayBuffer => audioCtx.decodeAudioData(arrayBuffer))
@@ -54,11 +69,36 @@ btn.addEventListener('click', async e => {
         audioCtx?.resume()
         btn.innerText = 'pause'
     } else {
-        playBuffer(songBuffer)
+        // playBuffer(songBuffer)
+        playMic()
     }
 })
 
-let curSource: AudioBufferSourceNode
+let curSource: AudioBufferSourceNode | MediaStreamAudioSourceNode
+
+function playMic() {
+    console.log('Microphone connected and streaming.');
+
+    btn.innerText = 'pause'
+
+    if (curSource && curSource instanceof AudioBufferSourceNode) {
+        curSource.onended = null
+        curSource.stop()
+    }
+
+    playing = true
+
+    curSource = audioCtx.createMediaStreamSource(micStream);
+    curSource.connect(audioCtx.destination);
+
+    curSource.connect(analyser);
+    curSource.connect(audioCtx.destination);
+    // curSource.start();
+    // curSource.onended = () => {
+    //     btn.innerText = 'play'
+    //     playing = false
+    // }
+}
 
 function playBuffer(buf: AudioBuffer) {
     btn.innerText = 'pause'
