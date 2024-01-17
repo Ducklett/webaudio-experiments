@@ -8,6 +8,8 @@ let dataArray: Uint8Array
 let micStream: MediaStream
 
 let audioInitialized = false
+let micInitialized = false
+
 async function initAudioContect() {
     if (audioInitialized) return
     audioInitialized = true
@@ -18,19 +20,24 @@ async function initAudioContect() {
     bufferLength = analyser.frequencyBinCount;
     dataArray = new Uint8Array(bufferLength);
 
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        // Access the user's microphone
-        navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(function (stream) {
-                micStream = stream
+    if (!micInitialized && getInputKind() == 'source-mic') {
+        micInitialized = true
 
-            })
-            .catch(function (error) {
-                // Handle any errors that occur during microphone access
-                console.error('Error accessing microphone:', error);
-            });
-    } else {
-        console.error('Web Audio API is not supported in this browser.');
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Access the user's microphone
+            await navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(function (stream) {
+                    micStream = stream
+
+                })
+                .catch(function (error) {
+                    // Handle any errors that occur during microphone access
+                    console.error('Error accessing microphone:', error);
+                });
+        } else {
+            console.error('Web Audio API is not supported in this browser.');
+        }
+
     }
 
 
@@ -69,8 +76,11 @@ btn.addEventListener('click', async e => {
         audioCtx?.resume()
         btn.innerText = 'pause'
     } else {
-        // playBuffer(songBuffer)
-        playMic()
+        if (getInputKind() == 'source-mic') {
+            playMic()
+        } else {
+            playBuffer(songBuffer)
+        }
     }
 })
 
@@ -170,6 +180,12 @@ canvas.addEventListener('drop', handleDrop);
 
 
 const waveformKind = document.getElementById('waveform-kind') as HTMLSelectElement
+
+function getInputKind() {
+    const val = (document.querySelector("#audio-source input[type=radio]:checked") as HTMLInputElement)?.id ?? 'source-file'
+    return val
+}
+
 
 
 
